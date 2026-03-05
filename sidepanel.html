@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BaseOS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:      #fafaf8;
+      --bg-elevated:  #f4f4f0;
+      --bg-overlay:   #ededea;
+      --bg-hover:     #f7f7f4;
+      --bg-active:    #e8e8e4;
+      --border:       #e2e2de;
+      --border-focus: #b8b8b2;
+      --border-subtle:#ebebE7;
+      --text-primary: #1a1a18;
+      --text-secondary:#5a5a54;
+      --text-tertiary: #9a9a94;
+      --text-placeholder: #c4c4be;
+      --accent-green: #16a34a;
+      --accent-red:   #dc2626;
+      --accent-blue:  #2563eb;
+      --radius-sm:    3px;
+      --radius:       5px;
+      --font:         'Geist', system-ui, sans-serif;
+      --mono:         'Geist Mono', 'JetBrains Mono', monospace;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      font-family: var(--font);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app { display: flex; flex-direction: column; height: 100vh; }
+
+    /* ── Activity bar (top) ─────────────────── */
+    .activity-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      height: 36px;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+      background: var(--bg-base);
+    }
+
+    .logo {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      user-select: none;
+    }
+    .logo b { color: var(--text-secondary); font-weight: 500; }
+
+    .tab-group {
+      display: flex;
+      gap: 0;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 1px solid transparent;
+      padding: 0 10px;
+      height: 36px;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: color 0.12s;
+      position: relative;
+      top: 1px;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--text-secondary); }
+    .tab-btn.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--text-secondary);
+    }
+
+    /* ── Views ──────────────────────────────── */
+    .view { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+    .view.active { display: flex; }
+
+    /* ── Scrollable body ────────────────────── */
+    .scroll-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 14px 0;
+    }
+    .scroll-body::-webkit-scrollbar { width: 3px; }
+    .scroll-body::-webkit-scrollbar-track { background: transparent; }
+    .scroll-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── Section label ──────────────────────── */
+    .section-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Page meta block ────────────────────── */
+    .page-meta {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    .page-title {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .page-url {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--text-tertiary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Field ──────────────────────────────── */
+    .field { margin-bottom: 12px; }
+
+    /* ── Summary box ────────────────────────── */
+    .summary-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 9px 11px;
+      font-size: 11.5px;
+      color: var(--text-tertiary);
+      min-height: 50px;
+      line-height: 1.65;
+    }
+    .summary-box.loaded { color: var(--text-secondary); }
+
+    /* ── Textarea ───────────────────────────── */
+    textarea {
+      width: 100%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 8px 11px;
+      font-family: var(--font);
+      font-size: 11.5px;
+      color: var(--text-primary);
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s;
+      line-height: 1.6;
+    }
+    textarea::placeholder { color: var(--text-placeholder); }
+    textarea:focus { border-color: var(--border-focus); }
+
+    /* ── Tags ───────────────────────────────── */
+    .tags-input-wrap {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 5px 9px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      cursor: text;
+      transition: border-color 0.15s;
+      min-height: 32px;
+      align-items: center;
+    }
+    .tags-input-wrap:focus-within { border-color: var(--border-focus); }
+
+    .tag-chip {
+      background: var(--bg-overlay);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1px 7px;
+      font-size: 10px;
+      font-family: var(--mono);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tag-chip .remove {
+      cursor: pointer;
+      color: var(--text-tertiary);
+      font-size: 13px;
+      line-height: 1;
+      transition: color 0.1s;
+    }
+    .tag-chip .remove:hover { color: var(--accent-red); }
+
+    #tag-input {
+      background: none; border: none; outline: none;
+      font-family: var(--mono); font-size: 10px;
+      color: var(--text-primary); flex: 1; min-width: 70px;
+    }
+    #tag-input::placeholder { color: var(--text-placeholder); }
+
+    /* ── Save footer ────────────────────────── */
+    .panel-footer {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-base);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .save-btn {
+      flex: 1;
+      padding: 7px 12px;
+      background: var(--bg-overlay);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .save-btn:hover { background: var(--bg-active); border-color: var(--border-focus); }
+
+    .kbd {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--text-tertiary);
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 5px;
+      letter-spacing: 0;
+    }
+
+    .save-feedback {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent-green);
+      white-space: nowrap;
+    }
+
+    /* ════════════════════════════════════════
+       LIST VIEW
+    ════════════════════════════════════════ */
+    .list-toolbar {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .search-wrap { position: relative; }
+    .search-icon {
+      position: absolute; left: 9px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary); font-size: 11px; pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 6px 10px 6px 26px;
+      font-family: var(--font);
+      font-size: 11.5px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-input::placeholder { color: var(--text-placeholder); }
+    .search-input:focus { border-color: var(--border-focus); }
+
+    .tag-filter-wrap {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .tag-filter-wrap:empty { display: none; }
+
+    .filter-tag {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 2px 8px;
+      font-size: 9.5px;
+      font-family: var(--mono);
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .filter-tag:hover { border-color: var(--border-focus); color: var(--text-secondary); }
+    .filter-tag.active { border-color: var(--text-tertiary); color: var(--text-primary); background: var(--bg-overlay); }
+
+    .items-list { flex: 1; overflow-y: auto; }
+    .items-list::-webkit-scrollbar { width: 3px; }
+    .items-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .list-item {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background 0.1s;
+      position: relative;
+      cursor: default;
+    }
+    .list-item:hover { background: var(--bg-hover); }
+    .list-item:last-child { border-bottom: none; }
+
+    .item-title {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+      padding-right: 50px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
+    .item-summary {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-bottom: 5px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.55;
+    }
+    .item-notes {
+      font-size: 10.5px;
+      color: var(--text-tertiary);
+      font-style: italic;
+      margin-bottom: 5px;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .item-meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .item-date { font-family: var(--mono); font-size: 9.5px; color: var(--text-tertiary); }
+    .dot-sep { width: 2px; height: 2px; border-radius: 50%; background: var(--text-tertiary); opacity: 0.4; }
+    .item-tag {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--text-tertiary);
+      background: var(--bg-overlay);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 5px;
+    }
+
+    .item-actions {
+      position: absolute; top: 9px; right: 12px;
+      display: flex; gap: 2px;
+      opacity: 0; transition: opacity 0.1s;
+    }
+    .list-item:hover .item-actions { opacity: 1; }
+
+    .item-btn {
+      background: none;
+      border: 1px solid transparent;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      padding: 3px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      transition: all 0.1s;
+    }
+    .item-btn:hover     { color: var(--text-primary); border-color: var(--border); background: var(--bg-overlay); }
+    .item-btn.del:hover { color: var(--accent-red); border-color: #fecaca; background: #fef2f2; }
+
+    .empty-state {
+      padding: 50px 20px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 11px;
+      font-family: var(--mono);
+    }
+
+    .list-footer {
+      padding: 8px 14px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      background: var(--bg-base);
+    }
+    .count-label { font-family: var(--mono); font-size: 9.5px; color: var(--text-tertiary); }
+    .export-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .export-btn:hover { border-color: var(--border-focus); color: var(--text-secondary); }
+
+    /* ════════════════════════════════════════
+       TODO VIEW
+    ════════════════════════════════════════ */
+    .todo-input-wrap {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .todo-text-input {
+      flex: 1;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 7px 11px;
+      font-family: var(--font);
+      font-size: 11.5px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .todo-text-input::placeholder { color: var(--text-placeholder); }
+    .todo-text-input:focus { border-color: var(--border-focus); }
+
+    .todo-add-btn {
+      background: var(--bg-overlay);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 28px; height: 28px;
+      font-size: 16px; line-height: 1;
+      cursor: pointer; flex-shrink: 0;
+      transition: all 0.12s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .todo-add-btn:hover { border-color: var(--border-focus); color: var(--text-primary); background: var(--bg-active); }
+
+    .todo-list { flex: 1; overflow-y: auto; }
+    .todo-list::-webkit-scrollbar { width: 3px; }
+    .todo-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background 0.1s;
+      position: relative;
+    }
+    .todo-item:hover { background: var(--bg-hover); }
+    .todo-item:last-child { border-bottom: none; }
+
+    .todo-item.done .todo-label {
+      color: var(--text-tertiary);
+      text-decoration: line-through;
+      text-decoration-color: var(--text-tertiary);
+    }
+
+    .todo-checkbox {
+      width: 14px; height: 14px;
+      border: 1px solid var(--border-focus);
+      border-radius: 3px;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      background: transparent;
+      margin-top: 1px;
+    }
+    .todo-checkbox:hover { border-color: var(--text-secondary); }
+    .todo-item.done .todo-checkbox {
+      background: var(--bg-overlay);
+      border-color: var(--border);
+    }
+    .todo-checkbox .check { display: none; font-size: 9px; color: var(--text-tertiary); line-height: 1; }
+    .todo-item.done .todo-checkbox .check { display: block; }
+
+    .todo-label {
+      flex: 1;
+      font-size: 11.5px;
+      color: var(--text-primary);
+      line-height: 1.5;
+      cursor: default;
+      transition: color 0.2s;
+      padding-right: 20px;
+    }
+
+    .todo-del {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      opacity: 0;
+      background: none; border: none;
+      color: var(--text-tertiary);
+      cursor: pointer; font-size: 14px;
+      padding: 2px 4px; border-radius: var(--radius-sm);
+      transition: all 0.1s;
+    }
+    .todo-item:hover .todo-del { opacity: 1; }
+    .todo-del:hover { color: var(--accent-red); }
+
+    .todo-footer {
+      padding: 8px 14px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; background: var(--bg-base);
+    }
+    .todo-count { font-family: var(--mono); font-size: 9.5px; color: var(--text-tertiary); }
+    .clear-done-btn {
+      background: none; border: none;
+      font-family: var(--mono); font-size: 9.5px;
+      color: var(--text-tertiary); cursor: pointer;
+      transition: color 0.12s; padding: 0;
+    }
+    .clear-done-btn:hover { color: var(--accent-red); }
+
+    /* ════════════════════════════════════════
+       SETTINGS VIEW
+    ════════════════════════════════════════ */
+    .settings-body { flex: 1; overflow-y: auto; padding: 14px; }
+    .settings-group { margin-bottom: 20px; }
+    .settings-group-title {
+      font-family: var(--mono); font-size: 9px; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-tertiary);
+      margin-bottom: 10px; padding-bottom: 7px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .settings-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; display: block; }
+    .settings-hint  { font-size: 10px; color: var(--text-tertiary); margin-top: 5px; line-height: 1.5; }
+    .settings-input {
+      width: 100%;
+      background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius); padding: 7px 11px;
+      font-family: var(--mono); font-size: 11px; color: var(--text-primary);
+      outline: none; transition: border-color 0.15s;
+    }
+    .settings-input:focus { border-color: var(--border-focus); }
+    .settings-input::placeholder { color: var(--text-placeholder); }
+    .settings-save-btn {
+      background: var(--bg-overlay); color: var(--text-primary);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 6px 14px; font-family: var(--mono); font-size: 10px;
+      font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.12s; margin-top: 10px;
+    }
+    .settings-save-btn:hover { border-color: var(--border-focus); background: var(--bg-active); }
+    .settings-feedback { font-family: var(--mono); font-size: 10px; color: var(--accent-green); margin-top: 7px; height: 14px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Activity bar -->
+  <div class="activity-bar">
+    <div class="logo">base<b>os</b></div>
+    <div class="tab-group">
+      <button class="tab-btn active" id="btn-save">save</button>
+      <button class="tab-btn" id="btn-list">links</button>
+      <button class="tab-btn" id="btn-todo">todo</button>
+      <button class="tab-btn" id="btn-settings">settings</button>
+    </div>
+  </div>
+
+  <!-- ── Save ───────────────────────────── -->
+  <div class="view active" id="view-save">
+    <div class="scroll-body">
+
+      <div class="page-meta">
+        <div class="page-title" id="page-title">Loading...</div>
+        <div class="page-url"   id="page-url"></div>
+      </div>
+
+      <div class="field">
+        <div class="section-label">Summary</div>
+        <div class="summary-box" id="summary-box">Fetching page description...</div>
+      </div>
+
+      <div class="field">
+        <div class="section-label">Notes</div>
+        <textarea id="notes-input" rows="3" placeholder="Add a note..."></textarea>
+      </div>
+
+      <div class="field" style="padding-bottom:14px">
+        <div class="section-label">Tags</div>
+        <div class="tags-input-wrap" id="tags-wrap">
+          <input type="text" id="tag-input" placeholder="tag, press enter" />
+        </div>
+      </div>
+
+    </div>
+    <div class="panel-footer">
+      <button class="save-btn" id="save-btn">
+        Save Link
+        <span class="kbd">⌘S</span>
+      </button>
+      <span class="save-feedback" id="save-feedback"></span>
+    </div>
+  </div>
+
+  <!-- ── Links ──────────────────────────── -->
+  <div class="view" id="view-list">
+    <div class="list-toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" class="search-input" id="search-input" placeholder="Search..." />
+      </div>
+    </div>
+    <div class="tag-filter-wrap" id="tag-filter-wrap"></div>
+    <div class="items-list" id="items-list"></div>
+    <div class="list-footer">
+      <span class="count-label" id="count-label">0 items</span>
+      <button class="export-btn" id="export-btn">export .md</button>
+    </div>
+  </div>
+
+  <!-- ── Todo ───────────────────────────── -->
+  <div class="view" id="view-todo">
+    <div class="todo-input-wrap">
+      <input type="text" class="todo-text-input" id="todo-input" placeholder="New task..." />
+      <button class="todo-add-btn" id="todo-add-btn">+</button>
+    </div>
+    <div class="todo-list" id="todo-list"></div>
+    <div class="todo-footer">
+      <span class="todo-count" id="todo-count">0 remaining</span>
+      <button class="clear-done-btn" id="clear-done-btn">clear done</button>
+    </div>
+  </div>
+
+  <!-- ── Settings ───────────────────────── -->
+  <div class="view" id="view-settings">
+    <div class="settings-body">
+      <div class="settings-group">
+        <div class="settings-group-title">API</div>
+        <label class="settings-label" for="api-key-input">Claude API Key</label>
+        <input type="password" class="settings-input" id="api-key-input" placeholder="sk-ant-..." />
+        <div class="settings-hint">Stored locally in Chrome only.</div>
+        <button class="settings-save-btn" id="settings-save-btn">Save</button>
+        <div class="settings-feedback" id="settings-feedback"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="sidepanel.js"></script>
+</body>
+</html>
